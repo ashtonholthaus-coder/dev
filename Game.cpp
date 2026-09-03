@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Game.h"
+#include <cstring>
 
 Game::Game()
 {
@@ -34,6 +35,8 @@ void Game::Reset()
 		brick.hits = 3;
 		bricks.push_back(brick);
 	}
+	victory = false;
+	defeat = false;
 }
 
 void Game::ResetBall()
@@ -82,6 +85,30 @@ void Game::Render() const
 		brick.Draw();
 	}
 
+	// If the player has won, display victory text and instruction to reset
+	if (victory)
+	{
+		const char* msg = "YOU WIN! Press R to reset";
+		Console::ForegroundColor(ConsoleColor::Green);
+		int x = (WINDOW_WIDTH - (int)strlen(msg)) / 2;
+		int y = WINDOW_HEIGHT / 2;
+		Console::SetCursorPosition(x, y);
+		std::cout << msg;
+		Console::ResetColor();
+	}
+
+	// If the player has lost, display defeat text and instruction to reset
+	if (defeat)
+	{
+		const char* msg = "YOU LOSE! Press R to reset";
+		Console::ForegroundColor(ConsoleColor::Red);
+		int x = (WINDOW_WIDTH - (int)strlen(msg)) / 2;
+		int y = WINDOW_HEIGHT / 2;
+		Console::SetCursorPosition(x, y);
+		std::cout << msg;
+		Console::ResetColor();
+	}
+
 	Console::Lock(false);
 }
 
@@ -94,14 +121,11 @@ void Game::CheckCollision()
 		{
 			bricks[i].hits -= 1;
 			ball.y_velocity *= -1;
-
 			// TODO #5 - If the ball hits the same brick 3 times (color == black), remove it from the vector
-			// when hits reach 0, mark black and remove the brick
 			if (bricks[i].hits <= 0)
 			{
 				bricks[i].color = ConsoleColor::Black;
 				bricks.erase(bricks.begin() + i);
-				// adjust index to account for erased element
 				--i;
 			}
 		}
@@ -109,11 +133,21 @@ void Game::CheckCollision()
 
 	// TODO #6 - If no bricks remain, pause ball and display (render) victory text with R to reset
 
+	if (bricks.empty())
+	{
+		ball.moving = false;
+		victory = true;
+	}
 
 	if (paddle.Contains(ball.x_position + ball.x_velocity, ball.y_velocity + ball.y_position))
 	{
 		ball.y_velocity *= -1;
 	}
 
-	// TODO #7 - If ball touches bottom of window, pause ball and display (render) defeat text with R to reset
+	// If ball touches bottom of window, pause ball and display (render) defeat text with R to reset
+	if (ball.y_position + ball.y_velocity >= WINDOW_HEIGHT - 1)
+	{
+		ball.moving = false;
+		defeat = true;
+	}
 }
